@@ -13,6 +13,8 @@ private:
 
 	int m_data_count = 0;
 	int m_move_data[10];
+	int m_index = 0;
+	int m_index_data[10];
 // 생성입니다.
 public:
 	CRecentValueMaintenanceDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.

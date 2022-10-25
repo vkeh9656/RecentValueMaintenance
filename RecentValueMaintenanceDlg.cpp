@@ -106,6 +106,15 @@ void CRecentValueMaintenanceDlg::OnPaint()
 			dc.DrawText(str, r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 		}
 
+		// 시작 위치를 변경하기
+		for (int i = 0; i < m_data_count; i++)
+		{
+			str.Format(L"%d", m_index_data[(i + m_index) % 10]);
+			r.SetRect(10 + i * 65, 90, 70 + i * 65, 120);
+			dc.Rectangle(r);
+			dc.DrawText(str, r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		}
+
 		// CDialogEx::OnPaint();
 	}
 }
@@ -148,15 +157,22 @@ void CRecentValueMaintenanceDlg::OnTimer(UINT_PTR nIDEvent)
 		if (m_data_count < 10)
 		{
 			m_move_data[m_data_count] = temp;
+			m_index_data[m_data_count] = temp;
 			m_data_count++;
 		}
 		else
 		{
-			for (int i = 0; i < 9; i++) // 10개에서 1개는 없어졌기 때문에
-			{
-				m_move_data[i] = m_move_data[i + 1];
-			}
+			//for (int i = 0; i < 9; i++) // 10개에서 1개는 없어졌기 때문에
+			//	m_move_data[i] = m_move_data[i + 1];
+			memcpy(m_move_data, m_move_data + 1, sizeof(int) * 9);
 			m_move_data[9] = temp;
+
+
+			// m_index : 0 -> 0 ... 9
+			// m_index : 1 -> 1 ... 9 0
+			// m_index : 2 -> 2 ... 9 0 1
+			m_index_data[m_index] = temp;
+			m_index = (m_index + 1) % 10;
 		}
 
 		Invalidate(FALSE);
