@@ -31,6 +31,8 @@ void CRecentValueMaintenanceDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CRecentValueMaintenanceDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_WM_TIMER()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -45,7 +47,8 @@ BOOL CRecentValueMaintenanceDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
-	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	srand((unsigned int)time(NULL));
+	SetTimer(1, 1000, NULL);	// WM_TIMER
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -56,10 +59,10 @@ BOOL CRecentValueMaintenanceDlg::OnInitDialog()
 
 void CRecentValueMaintenanceDlg::OnPaint()
 {
+	CPaintDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
+
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // 그리기를 위한 디바이스 컨텍스트입니다.
-
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
 		// 클라이언트 사각형에서 아이콘을 가운데에 맞춥니다.
@@ -75,7 +78,35 @@ void CRecentValueMaintenanceDlg::OnPaint()
 	}
 	else
 	{
-		CDialogEx::OnPaint();
+		CRect r;
+		CString str;
+		POSITION pos = m_data_list.GetHeadPosition();
+
+		dc.SelectStockObject(DC_BRUSH);
+		dc.SetDCBrushColor(RGB(0, 0, 128));
+		dc.SetBkColor(RGB(0, 0, 128));
+		dc.SetTextColor(RGB(0, 255, 255));
+
+		// 연결리스트
+		for (int i = 0; pos != NULL; i++)
+		{
+			str.Format(L"%d", *(int*)m_data_list.GetNext(pos));
+			r.SetRect(10 + i * 65, 10, 70 + i * 65, 40);
+			
+			dc.Rectangle(r);
+			dc.DrawText(str, r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		}
+		
+		// 배열 기반
+		for (int i = 0; i < m_data_count; i++)
+		{
+			str.Format(L"%d", m_move_data[i]);
+			r.SetRect(10 + i * 65, 50, 70 + i * 65, 80);
+			dc.Rectangle(r);
+			dc.DrawText(str, r, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+		}
+
+		// CDialogEx::OnPaint();
 	}
 }
 
@@ -86,3 +117,49 @@ HCURSOR CRecentValueMaintenanceDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CRecentValueMaintenanceDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	KillTimer(1);
+	POSITION pos = m_data_list.GetHeadPosition();
+	while (pos != NULL)
+	{
+		delete (int *)m_data_list.GetNext(pos);
+	}
+}
+
+void CRecentValueMaintenanceDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == 1)
+	{
+		int temp = rand() % 100; // 0 ~ 99
+
+		int* p = new int;
+		*p = temp;
+		m_data_list.AddTail(p);
+
+		if (m_data_list.GetCount() > 10)
+		{
+			delete (int *)m_data_list.GetHead();
+			m_data_list.RemoveHead();
+		}
+
+		if (m_data_count < 10)
+		{
+			m_move_data[m_data_count] = temp;
+			m_data_count++;
+		}
+		else
+		{
+			for (int i = 0; i < 9; i++) // 10개에서 1개는 없어졌기 때문에
+			{
+				m_move_data[i] = m_move_data[i + 1];
+			}
+			m_move_data[9] = temp;
+		}
+
+		Invalidate(FALSE);
+	}
+	CDialogEx::OnTimer(nIDEvent);
+}
